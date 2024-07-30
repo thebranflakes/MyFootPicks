@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from database import engine, get_db
@@ -42,6 +43,12 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         )
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/logout")
+async def logout(current_user: User = Depends(get_current_user)):
+    response = JSONResponse(content={"message": "Successfully logged out"})
+    response.delete_cookie(key="Authorization")
+    return response
 
 @app.post("/users/", response_model=User)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):

@@ -1,0 +1,32 @@
+nav {
+    background-color: #333;
+    padding: 1rem;
+  }
+  
+  ul {
+    list-style: none;
+    display: flex;
+    justify-content: space-around;
+    padding: 0;
+    margin: 0;
+  }
+  
+  li {
+    margin: 0;
+  }
+  
+  a {
+    color: white;
+    text-decoration: none;
+  }
+  
+  a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Ensure the content is not overlapped by navbar */
+  .content {
+    margin-top: 3rem; /* Adjust this value based on your nav height */
+    padding: 1rem;
+  }
+  
