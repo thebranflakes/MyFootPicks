@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { List, ListItem, ListItemText, Container, Typography } from '@mui/material';
+import { Container, Typography, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 
 const Picks = () => {
   const [picks, setPicks] = useState([]);
@@ -32,15 +32,26 @@ const Picks = () => {
       <Typography variant="h4" gutterBottom>
         My Picks
       </Typography>
-      <List>
-        {picks.map((pick) => (
-          <ListItem key={pick.id}>
-            <ListItemText
-              primary={`Year: ${pick.year}, Week: ${pick.week}, Team: ${pick.team_name}, Pick Number: ${pick.pick_number}`}
-            />
-          </ListItem>
-        ))}
-      </List>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>Year</TableCell>
+            <TableCell>Week</TableCell>
+            <TableCell>Team</TableCell>
+            <TableCell>Pick Number</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {picks.map((pick) => (
+            <TableRow key={pick.id}>
+              <TableCell>{pick.year}</TableCell>
+              <TableCell>{pick.week}</TableCell>
+              <TableCell>{pick.team_name}</TableCell>
+              <TableCell>{pick.pick_number}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </Container>
   );
 };

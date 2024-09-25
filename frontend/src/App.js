@@ -9,6 +9,7 @@ import Picks from './components/Picks';
 import Standings from './components/Standings';
 import Chat from './components/Chat';
 import ProtectedRoute from './components/ProtectedRoute';
+import PastResults from './components/PastResults';
 
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
         <Route path="/picks" element={<ProtectedRoute element={Picks} />} />
         <Route path="/standings" element={<ProtectedRoute element={Standings} />} />
         <Route path="/chat" element={<ProtectedRoute element={Chat} />} />
+        <Route path="/results" element={<PastResults />} />
       </Routes>
     </div>
   );

@@ -1,0 +1,126 @@
+.standings-container {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0 2rem;
+  box-sizing: border-box;
+  display: block;
+}
+
+.standings-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  table-layout: auto;
+}
+
+.standings-table th, .standings-table td {
+  padding: 8px;
+  text-align: center;
+  border: 1px solid #ddd;
+  vertical-align: middle;
+  min-width: 50px;
+  white-space: nowrap;
+}
+
+.standings-table tfoot td {
+  background-color: #e0e0e0;
+  font-weight: bold;
+  padding: 3px;
+  font-size: 2rem;
+  border-top: 3px solid black;
+  border-left: 1px solid black; /* Adds the line between records */
+  height: 5px;
+}
+
+.standings-table tbody td {
+  border: 1px solid #ddd;
+}
+
+.standings-table th {
+  background-color: #424242;
+  color: white;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.standings-table td {
+  background-color: white;
+  color: black;
+}
+
+.correct {
+  color: green;
+  font-weight: bold;
+  font-size: 0.5rem;
+}
+
+.incorrect {
+  color: red;
+  font-weight: bold;
+  font-size: 0.5rem;
+}
+
+.hidden {
+  color: gray;
+}
+
+.week-row {
+  text-align: center;
+  font-weight: bold;
+  padding: 10px 0;
+  background-color: #f0f0f0 !important; /* Ensures week rows are gray */
+  border-top: 1px solid black;
+  border-bottom: 1px solid black;
+}
+
+.record {
+  font-size: 0.7rem;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.username {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: 0.65rem;
+  text-align: center;
+  padding: 0;
+}
+
+.username.long-username,
+.username.very-long-username {
+  font-size: 0.55rem;
+  text-align: center;
+}
+
+.standings-table tfoot td {
+  border-left: 2px solid white; /* Adds the line between each record */
+  padding: 1px;
+  font-size: 0.7rem;
+  height: 10px;
+}
+
+.standings-table tfoot td:first-child {
+  border-left: none;
+}
+
+@media (max-width: 1200px) {
+  .username {
+    font-size: 0.6rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .username {
+    font-size: 0.55rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .username {
+    font-size: 0.5rem;
+  }
+}

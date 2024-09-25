@@ -10,6 +10,9 @@ def get_user_by_email(db: Session, email: str):
 def get_user_by_username(db: Session, username: str):
     return db.query(User).filter(User.username == username).first()
 
+def get_user(db: Session, user_id: int):
+    return db.query(User).filter(User.id == user_id).first()
+
 def create_user(db: Session, user: UserCreate):
     hashed_password = get_password_hash(user.password)
     db_user = User(
@@ -32,6 +35,11 @@ def create_pick(db: Session, pick: PickCreate, user_id: int):
 
 def get_picks(db: Session, user_id: int):
     return db.query(Pick, Team).join(Team, Pick.team_id == Team.team_id).filter(Pick.user_id == user_id).all()
+
+def get_picks_by_year(db: Session, user_id: int, year: int):
+    return db.query(Pick, Team).join(Team, Pick.team_id == Team.team_id).filter(
+        Pick.user_id == user_id, Pick.year == year
+    ).all()
 
 def get_teams(db: Session):
     return db.query(Team).all()

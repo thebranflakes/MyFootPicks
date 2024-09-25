@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 
+# User Schemas
 class UserBase(BaseModel):
     email: str
     username: str
@@ -23,6 +24,15 @@ class User(UserBase):
     class Config:
         from_attributes = True
 
+class UserUpdate(BaseModel):
+    favorite_team: Optional[str] = None
+    favorite_color: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+
+# Pick Schemas
 class PickBase(BaseModel):
     year: int
     week: int
@@ -34,14 +44,26 @@ class PickCreate(PickBase):
 
 class Pick(PickBase):
     id: int
-    correct: Optional[bool] = None
-    status: Optional[bool] = None
+    correct: Optional[int] = None
+    status: Optional[int] = None
+    user_id: int
+    team_name: Optional[str] = None  # Display name of the team
+    abbreviation: Optional[str] = None  # Team abbreviation
+
+    class Config:
+        from_attributes = True
+
+class PickSummary(BaseModel):
+    id: int
+    correct: Optional[int] = None
     user_id: int
     team_name: Optional[str] = None
 
     class Config:
         from_attributes = True
 
+
+# Chat Message Schemas
 class ChatMessageBase(BaseModel):
     message: str
 
@@ -58,6 +80,8 @@ class ChatMessage(ChatMessageBase):
     class Config:
         from_attributes = True
 
+
+# Team Schemas
 class TeamBase(BaseModel):
     team_name: str
     abbreviation: str
@@ -73,6 +97,8 @@ class Team(TeamBase):
     class Config:
         from_attributes = True
 
+
+# Token Schemas
 class Token(BaseModel):
     access_token: str
     token_type: str

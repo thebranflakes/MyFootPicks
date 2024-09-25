@@ -13,7 +13,7 @@ import os
 # Secret key to encode JWT
 JWT_SECRET = os.getenv("JWT_SECRET")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Token expiry time in minutes
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # Token expiry time in minutes
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
