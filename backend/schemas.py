@@ -40,7 +40,10 @@ class PickBase(BaseModel):
     pick_number: int
 
 class PickCreate(PickBase):
-    pass
+    year: int
+    week: int
+    team_id: int
+    pick_number: int
 
 class Pick(PickBase):
     id: int

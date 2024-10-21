@@ -34,7 +34,7 @@ const NavBar = () => {
       <ul>
         <li><Link to="/">Home</Link></li>
         {isAuthenticated && <li><Link to="/profile">Profile</Link></li>}
-        {isAuthenticated && <li><Link to="/picks">Picks</Link></li>}
+        {isAuthenticated && <li><Link to="/makepicks">Make Picks</Link></li>}
         {isAuthenticated && <li><Link to="/standings">Standings</Link></li>}
         {isAuthenticated && <li><Link to="/chat">Chat</Link></li>}
         {isAuthenticated ? (

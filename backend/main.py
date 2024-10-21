@@ -6,15 +6,15 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session, joinedload
 from fastapi.security import OAuth2PasswordRequestForm
 from database import engine, get_db
-from models import Base, User as UserModel, Pick as PickModel  # Correct model usage
+from models import Base, User as UserModel, Pick as PickModel, Team as TeamModel  # Correct model usage
 from schemas import UserCreate, Token, User as UserSchema, PickCreate, Pick as PickSchema, ChatMessageCreate, ChatMessage, TeamCreate, Team, PickSummary, UserUpdate
 from auth import authenticate_user, create_access_token, get_current_user
 import crud
 from dotenv import load_dotenv
-from typing import List
+from typing import Optional, List
 from config import YEAR
 
-logging.basicConfig()
+logging.basicConfig(level=logging.INFO)
 logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 load_dotenv()  # Ensure .env file is loaded
@@ -84,24 +84,75 @@ def update_user_me(
     db.refresh(user)
     return user
 
-@app.get("/picks/", response_model=List[PickSchema])
+@app.get("/picks", response_model=List[PickSchema])
 def get_picks(db: Session = Depends(get_db), current_user: UserSchema = Depends(get_current_user)):
-    picks = crud.get_picks(db=db, user_id=current_user.id)
-    return [
-        PickSchema(
-            id=pick.Pick.id,
-            year=pick.Pick.year,
-            week=pick.Pick.week,
-            team_id=pick.Pick.team_id,
-            pick_number=pick.Pick.pick_number if pick.Pick.pick_number is not None else None,  # Set to None or default value
-            correct=pick.Pick.correct,
-            status=pick.Pick.status,
-            user_id=pick.Pick.user_id,
-            team_name=pick.Team.display_name,  # Use the display_name from the Team table
-            abbreviation=pick.Team.abbreviation
+    try:
+        picks = crud.get_picks(db=db, user_id=current_user.id)
+        logging.info(f"Fetched picks for user {current_user.id}: {picks}")
+        return [
+            PickSchema(
+                id=pick.Pick.id,
+                year=pick.Pick.year,
+                week=pick.Pick.week,
+                team_id=pick.Pick.team_id,
+                pick_number=pick.Pick.pick_number,
+                correct=pick.Pick.correct,
+                status=pick.Pick.status,
+                user_id=pick.Pick.user_id,
+                team_name=pick.Team.display_name,  # Use display_name from Team
+                abbreviation=pick.Team.abbreviation
+            )
+            for pick in picks
+        ]
+    except Exception as e:
+        logging.error(f"Error fetching picks for user {current_user.id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve picks")
+
+@app.post("/picks", response_model=PickSchema)
+def submit_pick(pick: PickCreate, db: Session = Depends(get_db), current_user: UserSchema = Depends(get_current_user)):
+    try:
+        logging.info(f"Pick Data Received: {pick.model_dump()}")  # This will log the pick data
+
+        # Use the ORM model `Pick` here instead of `PickSchema`
+        new_pick = PickModel(
+            user_id=current_user.id,  # Set user_id here
+            year=pick.year,
+            week=pick.week,
+            team_id=pick.team_id,
+            pick_number=pick.pick_number,
+            correct=None,  # Defaults to None
+            status=0  # Defaults to 0 (e.g., not started)
         )
-        for pick in picks
-    ]
+        
+        db.add(new_pick)
+        db.commit()
+        db.refresh(new_pick)
+        logging.info(f"User {current_user.id} submitted pick {new_pick}")
+        return new_pick
+    except Exception as e:
+        logging.error(f"Error submitting pick for user {current_user.id}: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to submit pick")
+
+@app.delete("/picks/{pick_id}", response_model=PickSchema)
+def delete_pick(pick_id: int, db: Session = Depends(get_db), current_user: UserSchema = Depends(get_current_user)):
+    try:
+        # Query the pick by id and user id to ensure the current user owns the pick
+        pick = db.query(PickModel).filter(PickModel.id == pick_id, PickModel.user_id == current_user.id).first()
+
+        if not pick:
+            raise HTTPException(status_code=404, detail="Pick not found or unauthorized")
+
+        # Delete the pick
+        db.delete(pick)
+        db.commit()
+
+        return pick
+    except Exception as e:
+        logging.error(f"Error deleting pick for user {current_user.id}: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete pick")
+
 
 
 # logging.basicConfig(level=logging.INFO)
@@ -144,15 +195,21 @@ def get_all_picks_for_standings(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/team/{abbreviation}")
+def get_team_by_abbreviation(abbreviation: str, db: Session = Depends(get_db)):
+    team = db.query(Team).filter(Team.abbreviation == abbreviation).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    return {"team_id": team.team_id}
 
-
-@app.post("/teams/", response_model=Team)
-def create_team(team: TeamCreate, db: Session = Depends(get_db)):
-    return crud.create_team(db=db, team=team)
-
-@app.get("/teams/", response_model=List[Team])
+@app.get("/teams")
 def get_teams(db: Session = Depends(get_db)):
-    return crud.get_teams(db=db)
+    try:
+        teams = db.query(TeamModel).all()
+        return teams
+    except Exception as e:
+        logging.error(f"Error fetching teams: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/chat_messages/", response_model=ChatMessage)
 def create_chat_message(chat_message: ChatMessageCreate, db: Session = Depends(get_db), current_user: UserSchema = Depends(get_current_user)):
