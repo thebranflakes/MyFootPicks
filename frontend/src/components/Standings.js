@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './css/Standings.css';
 
+
 const week1StartDate = new Date('2024-09-04');
 const weekDuration = 7; // Days per week
 const maxWeeks = 16;
@@ -18,9 +19,11 @@ const currentWeek = getCurrentWeek();
 
 const Standings = () => {
   const [standings, setStandings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStandings = async () => {
+      setLoading(true);
       const token = localStorage.getItem('token');
       try {
         const response = await axios.get('http://127.0.0.1:8000/standings/', {
@@ -31,6 +34,8 @@ const Standings = () => {
         setStandings(sortedStandings);
       } catch (error) {
         console.error('Error fetching standings:', error);
+      } finally {
+        setLoading(false); // Hide loading spinner
       }
     };
   
@@ -54,6 +59,11 @@ const Standings = () => {
 
   return (
     <div className="standings-container">
+      {loading ? (
+      <div className="spinner">
+        <i className="fas fa-spinner fa-spin fa-3x"></i>
+      </div>
+    ) : (
       <div className="table-wrapper">
         <table className="standings-table">
           <thead>
@@ -115,6 +125,7 @@ const Standings = () => {
           </tfoot>
         </table>
       </div>
+       )}
     </div>
   );
 };

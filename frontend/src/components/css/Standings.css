@@ -6,6 +6,15 @@
   display: block;
 }
 
+.spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5em;
+  padding: 2em;
+  color: #333;
+}
+
 .standings-table {
   width: 100%;
   border-collapse: collapse;

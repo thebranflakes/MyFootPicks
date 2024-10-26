@@ -11,6 +11,7 @@ import Chat from './components/Chat';
 import ProtectedRoute from './components/ProtectedRoute';
 import PastResults from './components/PastResults';
 import MakePicks from './components/MakePicks';
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 
 function App() {

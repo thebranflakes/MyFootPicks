@@ -10,9 +10,10 @@ from models import Base, User as UserModel, Pick as PickModel, Team as TeamModel
 from schemas import UserCreate, Token, User as UserSchema, PickCreate, Pick as PickSchema, ChatMessageCreate, ChatMessage, TeamCreate, Team, PickSummary, UserUpdate
 from auth import authenticate_user, create_access_token, get_current_user
 import crud
+import requests
 from dotenv import load_dotenv
 from typing import Optional, List
-from config import YEAR
+from config import YEAR, CURRENT_WEEK
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
@@ -153,21 +154,154 @@ def delete_pick(pick_id: int, db: Session = Depends(get_db), current_user: UserS
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to delete pick")
 
+@app.put("/picks/update_status/")
+def update_picks_status(team_abbreviation: str, week: int, year: int, db: Session = Depends(get_db)):
+    try:
+        # Find all picks for the given team, week, and year
+        team_id = db.query(TeamModel.id).filter(TeamModel.abbreviation == team_abbreviation).scalar()
+
+        if not team_id:
+            raise HTTPException(status_code=404, detail="Team not found")
+
+        # Update the status of all picks for that team in the given week and year
+        db.query(PickModel).filter(
+            PickModel.team_id == team_id,
+            PickModel.week == week,
+            PickModel.year == year,
+            PickModel.status == 0  # Only update picks that are still hidden (status = 0)
+        ).update({PickModel.status: 1})
+
+        db.commit()
+        return {"message": "Pick statuses updated successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update picks status")
+    
+def fetch_games_from_espn(week_number):
+    try:
+        url = f"https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?week={week_number}"
+        response = requests.get(url)
+        response.raise_for_status()  # This will raise an HTTPError if the response was an error
+        data = response.json()
+        
+        # Extract relevant game information
+        games = []
+        for event in data.get('events', []):
+            home_team = event['competitions'][0]['competitors'][0]['team']['abbreviation']
+            away_team = event['competitions'][0]['competitors'][1]['team']['abbreviation']
+            game_state = event['status']['type']['state']
+
+            games.append({
+                'homeTeam': home_team,
+                'awayTeam': away_team,
+                'status': game_state
+            })
+
+        logging.info(f"Fetched games for week {week_number}: {games}")
+        return games
+
+    except requests.RequestException as e:
+        logging.error(f"Error fetching data from ESPN API: {e}")
+        return []
+
+def update_pick_statuses_for_week(week_number, year, db: Session):
+    url = f"https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?week={week_number}"
+    
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Log the response structure to confirm the format
+        logging.info("Fetched games for week %s: %s", week_number, data)
+        
+        games = data.get("events", [])
+        
+        for game in games:
+            game_state = game.get("status", {}).get("type", {}).get("state")
+            competition = game.get("competitions", [{}])[0]
+            home_team_info = competition["competitors"][0]
+            away_team_info = competition["competitors"][1]
+
+            home_team_abbr = home_team_info["team"]["abbreviation"]
+            away_team_abbr = away_team_info["team"]["abbreviation"]
+
+            logging.info("Processing game: %s vs %s, state: %s", home_team_abbr, away_team_abbr, game_state)
+
+            # Fetch team IDs
+            home_team_id = db.query(TeamModel).filter(TeamModel.abbreviation == home_team_abbr).first().team_id
+            away_team_id = db.query(TeamModel).filter(TeamModel.abbreviation == away_team_abbr).first().team_id
+
+            # Update status for non-pre games
+            if game_state != "pre":
+                db.query(PickModel).filter(
+                    PickModel.year == year,
+                    PickModel.week == week_number,
+                    PickModel.team_id.in_([home_team_id, away_team_id])
+                ).update({"status": 1})
+                db.commit()
+
+            # Process scores only if game is completed
+            if game_state == "post":
+                home_score = int(home_team_info.get("score", 0))
+                away_score = int(away_team_info.get("score", 0))
+
+                logging.info("Home Team: %s Score: %s, Away Team: %s Score: %s", home_team_abbr, home_score, away_team_abbr, away_score)
+
+                if home_score == away_score:
+                    # Update both teams' picks as ties (correct = 2)
+                    db.query(PickModel).filter(
+                        PickModel.year == year,
+                        PickModel.week == week_number,
+                        PickModel.team_id.in_([home_team_id, away_team_id])
+                    ).update({"correct": 2})
+                    db.commit()
+
+                else:
+                    # Determine the winner and loser
+                    winning_team_id = home_team_id if home_score > away_score else away_team_id
+                    losing_team_id = away_team_id if home_score > away_score else home_team_id
+
+                    # Update the winner's picks as correct (correct = 1)
+                    db.query(PickModel).filter(
+                        PickModel.year == year,
+                        PickModel.week == week_number,
+                        PickModel.team_id == winning_team_id
+                    ).update({"correct": 1})
+
+                    # Update the loser's picks as incorrect (correct = 0)
+                    db.query(PickModel).filter(
+                        PickModel.year == year,
+                        PickModel.week == week_number,
+                        PickModel.team_id == losing_team_id
+                    ).update({"correct": 0})
+                    db.commit()
+
+    except requests.RequestException as e:
+        logging.error("Error fetching or processing games from ESPN API: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to fetch game data")
 
 
-# logging.basicConfig(level=logging.INFO)
 @app.get("/standings/")
 def get_all_picks_for_standings(db: Session = Depends(get_db)):
     try:
+        # logging.info(f"Fetching standings for current week {CURRENT_WEEK} and year {YEAR}")
+
+        # Simulate updating the pick statuses for the current week
+        logging.info(f"Attempting to update pick statuses for week {CURRENT_WEEK}")
+        update_pick_statuses_for_week(CURRENT_WEEK, YEAR, db)  # Update picks for the current week
+
         users = db.query(UserModel).filter(UserModel.username != "test").all()
 
         standings = []
         for user in users:
+            logging.info(f"Processing picks for user {user.username}")
             # Filter picks by user_id and the year 2024, join Team model to access the abbreviation
             user_picks = db.query(PickModel).options(joinedload(PickModel.team)).filter(
                 PickModel.user_id == user.id,
-                PickModel.year == 2024  # Filter by the year 2024
+                PickModel.year == YEAR  # Filter by the year from config
             ).all()
+            logging.info(f"User {user.username} has {len(user_picks)} picks for the year {YEAR}")
 
             # Calculate wins, losses, ties
             wins = sum(pick.correct == 1 for pick in user_picks)
