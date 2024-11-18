@@ -1,2 +1,2 @@
 frontend: cd frontend && npm start
-web: python backend/main.py
+web: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
