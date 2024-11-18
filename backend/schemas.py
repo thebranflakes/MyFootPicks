@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 
 # User Schemas
 class UserBase(BaseModel):
@@ -67,21 +68,22 @@ class PickSummary(BaseModel):
 
 
 # Chat Message Schemas
-class ChatMessageBase(BaseModel):
-    message: str
-
-class ChatMessageCreate(ChatMessageBase):
-    pass
-
-class ChatMessage(ChatMessageBase):
+class ChatMessageSchema(BaseModel):
     id: int
-    user_id: int
-    timestamp: str
-    favorite_color: Optional[str] = None
+    userId: Optional[int] = None
+    username: str
+    message: str
+    timestamp: datetime
+    favoriteColor: Optional[str] = None
     image_url: Optional[str] = None
 
     class Config:
-        from_attributes = True
+        orm_mode = True
+
+class ChatMessageCreate(BaseModel):
+    message: str
+    favoriteColor: Optional[str] = None
+    image_url: Optional[str] = None
 
 
 # Team Schemas

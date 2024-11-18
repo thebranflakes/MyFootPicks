@@ -10,7 +10,7 @@ const NavBar = () => {
     const token = localStorage.getItem('token');
     
     // Call the backend logout endpoint
-    const response = await fetch('http://localhost:8000/logout', {
+    const response = await fetch('REACT_APP_API_BASE_URL/logout', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

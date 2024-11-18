@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Container, Typography, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 
 const Picks = () => {
   const [picks, setPicks] = useState([]);
@@ -15,7 +17,7 @@ const Picks = () => {
         return;
       }
       try {
-        const response = await axios.get('http://127.0.0.1:8000/picks', {
+        const response = await axios.get(`${API_BASE_URL}/picks`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setPicks(response.data);

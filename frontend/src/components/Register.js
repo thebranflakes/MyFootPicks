@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 
 const Register = () => {
   const [username, setUsername] = useState('');
@@ -10,7 +12,7 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://127.0.0.1:8000/users/', { username, email, password, venmo });
+      await axios.post(`${API_BASE_URL}/users/`, { username, email, password, venmo });
       alert('User registered successfully!');
     } catch (error) {
       console.error('There was an error registering the user!', error);

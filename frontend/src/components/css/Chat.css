@@ -1,0 +1,145 @@
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+    background-color: #3e3f41; /* Light gray background */
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .messages-container {
+    flex-grow: 1;
+    overflow-y: auto; /* Enable scrolling */
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    background-color: #9e9797; /* White background for messages */
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  
+  .chat-message {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding: 10px;
+    border-radius: 8px;
+    max-width: 600px;
+    word-wrap: break-word;
+    background-color: #6f7070; /* Light gray bubble for messages */
+  }
+  
+  .chat-message img {
+    width: 50px; /* Increase width */
+    height: 50px; /* Increase height */
+    border-radius: 8px; /* Use a smaller border-radius to fit the image shape better */
+    margin-right: 12px;
+    object-fit: cover; /* Ensures image scaling maintains aspect ratio */
+  }
+  
+  .chat-message .message-content {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .chat-message .message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+  }
+  
+  .chat-message .username {
+    font-weight: bold;
+    font-size: medium;
+    color: #333;
+    margin-right: 10px;
+  }
+  
+  .chat-message .timestamp {
+    font-size: 0.8em;
+    color: #666;
+  }
+  
+  .chat-message .message-text {
+    font-size: 1em;
+    color: #444;
+    white-space: pre-wrap;
+  }
+  
+  .current-user {
+    background-color: #d1e7dd; /* Subtle green for the current user's messages */
+    align-self: flex-end;
+  }
+  
+  .other-user {
+    background-color: #e9ecef; /* Light gray for other users' messages */
+  }
+  
+  .chat-input {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background-color: #f3f4f6;
+    border-top: 1px solid #ddd;
+  }
+  
+  .chat-input input[type="text"] {
+    flex-grow: 1;
+    padding: 10px;
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    margin-right: 10px;
+  }
+  
+  .chat-input button {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    min-width: 60px;
+    max-width: 100px;
+    flex-shrink: 1;
+  }
+  
+  .chat-input button:hover {
+    background-color: #0056b3;
+  }
+
+  #form {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.5rem;
+    border-top: 1px solid #ddd;
+  }
+  
+  #input {
+    flex-grow: 1; /* Allows the input to expand and take up remaining space */
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 20px;
+    margin-right: 10px;
+    outline: none;
+    min-width: 0; /* Ensures input shrinks if necessary */
+  }
+  
+  #form > button {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 1; /* Allows button to shrink */
+    max-width: 100px; /* Sets a maximum width for the button */
+    min-width: 60px; /* Sets a minimum width for the button to prevent it from getting too small */
+  }
+  
+  

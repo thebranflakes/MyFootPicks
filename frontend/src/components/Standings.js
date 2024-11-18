@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './css/Standings.css';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 
 
 const week1StartDate = new Date('2024-09-04');
@@ -26,7 +28,7 @@ const Standings = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       try {
-        const response = await axios.get('http://127.0.0.1:8000/standings/', {
+        const response = await axios.get(`${API_BASE_URL}/standings/`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         

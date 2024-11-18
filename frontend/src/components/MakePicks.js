@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './css/Picks.css';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 
 const teamMap = {
   1: { id: 1, abbreviation: "ARI", name: "Arizona Cardinals" },
@@ -101,7 +103,7 @@ const Picks = () => {
   const fetchUserPicks = async () => {
     const token = localStorage.getItem('token');
     try {
-      const response = await axios.get('http://127.0.0.1:8000/picks', {
+      const response = await axios.get(`${API_BASE_URL}/picks`, {
         headers: { Authorization: `Bearer ${token}` }
       });
   
@@ -152,7 +154,7 @@ const Picks = () => {
     }
 
     try {
-      await axios.post('http://127.0.0.1:8000/picks', {
+      await axios.post(`${API_BASE_URL}/picks`, {
         team_id: teamId,
         week: selectedWeek,
         pick_number: pickNumber,
@@ -198,7 +200,7 @@ const Picks = () => {
     }
   
     try {
-      await axios.delete(`http://127.0.0.1:8000/picks/${pick.id}`, {
+      await axios.delete(`${API_BASE_URL}/picks/${pick.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
   

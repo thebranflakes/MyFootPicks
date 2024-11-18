@@ -1,13 +1,14 @@
 import os
-import logging
-from fastapi import FastAPI, Depends, HTTPException, status
+import logging, datetime
+from fastapi import APIRouter,FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session, joinedload
 from fastapi.security import OAuth2PasswordRequestForm
 from database import engine, get_db
-from models import Base, User as UserModel, Pick as PickModel, Team as TeamModel  # Correct model usage
-from schemas import UserCreate, Token, User as UserSchema, PickCreate, Pick as PickSchema, ChatMessageCreate, ChatMessage, TeamCreate, Team, PickSummary, UserUpdate
+from models import Base, User as UserModel, Pick as PickModel, Team as TeamModel, ChatMessage as ChatMessageModel  # Correct model usage
+from schemas import UserCreate, Token, User as UserSchema, PickCreate, Pick as PickSchema, ChatMessageSchema, ChatMessageCreate, TeamCreate, Team, PickSummary, UserUpdate
 from auth import authenticate_user, create_access_token, get_current_user
 import crud
 import requests
@@ -22,7 +23,13 @@ load_dotenv()  # Ensure .env file is loaded
 
 Base.metadata.create_all(bind=engine)
 
+PORT = os.getenv("PORT", 8000)
+
 app = FastAPI()
+
+app.mount(
+    "/", StaticFiles(directory=os.path.join("frontend", "build"), html=True), name="static"
+)
 
 # Add CORS middleware
 origins = [
@@ -37,6 +44,83 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: ChatMessageSchema):
+        for connection in self.active_connections:
+            await connection.send_json(message.dict())
+
+manager = ConnectionManager()
+
+@app.get("/chat_messages", response_model=List[ChatMessageSchema])
+def get_chat_messages(db: Session = Depends(get_db)):
+    try:
+        messages = db.query(ChatMessageModel).order_by(ChatMessageModel.timestamp.desc()).limit(50).all()
+        return messages
+    except Exception as e:
+        logging.error(f"Error fetching chat messages: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch chat history")
+
+@app.post("/chat_messages", response_model=ChatMessageSchema)
+def create_chat_message(chat_message: ChatMessageCreate, db: Session = Depends(get_db), current_user: UserSchema = Depends(get_current_user)):
+    try:
+        new_message = ChatMessageModel(
+            username=current_user.username,
+            message=chat_message.message,
+            timestamp=datetime.utcnow(),
+            favoriteColor=current_user.favorite_color,
+            image_url=current_user.image_url
+        )
+        db.add(new_message)
+        db.commit()
+        db.refresh(new_message)
+        return new_message
+    except Exception as e:
+        logging.error(f"Error creating chat message: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send chat message")
+    
+@app.websocket("/ws/chat")
+async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            message_text = data.get("message")
+            username = data.get("username")
+            favoriteColor = data.get("favoriteColor", "black")
+            image_url = data.get("image_url", "https://i.imgur.com/WjFdo32.jpeg")
+            timestamp = datetime.utcnow()
+
+            # Save the message to the database
+            new_message = ChatMessageModel(
+                userId=None,  # Optional if the user ID is not required
+                username=username,
+                message=message_text,
+                timestamp=timestamp,
+                favoriteColor=favoriteColor,
+                image_url=image_url,
+            )
+            db.add(new_message)
+            db.commit()
+            db.refresh(new_message)
+
+            # Broadcast the message to all connected clients
+            await manager.broadcast(ChatMessageSchema.from_orm(new_message))
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception as e:
+        logging.error(f"WebSocket error: {e}")
+        raise HTTPException(status_code=500, detail="WebSocket error")
 
 @app.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -345,15 +429,7 @@ def get_teams(db: Session = Depends(get_db)):
         logging.error(f"Error fetching teams: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/chat_messages/", response_model=ChatMessage)
-def create_chat_message(chat_message: ChatMessageCreate, db: Session = Depends(get_db), current_user: UserSchema = Depends(get_current_user)):
-    chat_message.userId = current_user.id
-    return crud.create_chat_message(db=db, chat_message=chat_message)
-
-@app.get("/chat_messages/", response_model=List[ChatMessage])
-def get_chat_messages(db: Session = Depends(get_db)):
-    return crud.get_chat_messages(db=db)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=int(PORT))

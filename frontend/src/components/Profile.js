@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './css/Profile.css';
 import { YEAR } from '../config';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -12,76 +14,24 @@ const Profile = () => {
   const [favoriteTeam, setFavoriteTeam] = useState('');
 
   const colors = [
-    "Red", 
-    "Green", 
-    "Blue", 
-    "Yellow", 
-    "Orange", 
-    "Purple", 
-    "Pink", 
-    "Brown", 
-    "Gray", 
-    "Black", 
-    "White", 
-    "Cyan", 
-    "Magenta", 
-    "Lime", 
-    "Maroon", 
-    "Navy", 
-    "Olive", 
-    "Teal", 
-    "Tan",
-    "Aquamarine", 
-    "Fuchsia", 
-    "Silver", 
-    "Gold", 
-    "Coral", 
-    "DarkRed", 
-    "DarkGreen", 
-    "DarkBlue"
+    "Red", "Green", "Blue", "Yellow", "Orange", "Purple", "Pink", "Brown",
+    "Gray", "Black", "White", "Cyan", "Magenta", "Lime", "Maroon", "Navy",
+    "Olive", "Teal", "Tan", "Aquamarine", "Fuchsia", "Silver", "Gold",
+    "Coral", "DarkRed", "DarkGreen", "DarkBlue"
   ];
 
   const teams = [
-    "Cardinals", 
-    "Falcons", 
-    "Ravens", 
-    "Bills", 
-    "Panthers", 
-    "Bears", 
-    "Bengals", 
-    "Browns", 
-    "Cowboys", 
-    "Broncos", 
-    "Lions", 
-    "Packers", 
-    "Texans", 
-    "Colts", 
-    "Jaguars", 
-    "Chiefs", 
-    "Raiders", 
-    "Chargers", 
-    "Rams", 
-    "Dolphins", 
-    "Vikings", 
-    "Patriots", 
-    "Saints", 
-    "Giants", 
-    "Jets", 
-    "Eagles", 
-    "Steelers", 
-    "49ers", 
-    "Seahawks", 
-    "Buccaneers", 
-    "Titans", 
-    "Commanders"
+    "Cardinals", "Falcons", "Ravens", "Bills", "Panthers", "Bears", "Bengals", "Browns",
+    "Cowboys", "Broncos", "Lions", "Packers", "Texans", "Colts", "Jaguars", "Chiefs",
+    "Raiders", "Chargers", "Rams", "Dolphins", "Vikings", "Patriots", "Saints", "Giants",
+    "Jets", "Eagles", "Steelers", "49ers", "Seahawks", "Buccaneers", "Titans", "Commanders"
   ];
-  
 
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
       try {
-        const profileResponse = await axios.get('http://127.0.0.1:8000/users/me', {
+        const profileResponse = await axios.get(`${API_BASE_URL}/users/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUser(profileResponse.data);
@@ -89,7 +39,7 @@ const Profile = () => {
         setFavoriteTeam(profileResponse.data.favorite_team || '');
 
         // Fetch all picks for the user
-        const picksResponse = await axios.get('http://127.0.0.1:8000/picks', {
+        const picksResponse = await axios.get(`${API_BASE_URL}/picks`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -105,8 +55,10 @@ const Profile = () => {
           }
         });
 
-        // Filter picks for the year 2024
-        const filteredPicks = picksResponse.data.filter(pick => pick.year === YEAR);
+        // Filter picks for the year 2024 and sort by week
+        const filteredPicks = picksResponse.data
+          .filter(pick => pick.year === YEAR)
+          .sort((a, b) => a.week - b.week);
 
         setPicks(filteredPicks);
         setRecord({ wins, losses, ties });
@@ -124,7 +76,7 @@ const Profile = () => {
   const handleUpdate = async () => {
     const token = localStorage.getItem('token');
     try {
-      await axios.put('http://127.0.0.1:8000/users/me', {
+      await axios.put(`${API_BASE_URL}/users/me`, {
         favorite_color: favoriteColor,
         favorite_team: favoriteTeam
       }, {
@@ -202,29 +154,30 @@ const Profile = () => {
           </tr>
         </thead>
         <tbody>
-          {picks.reduce((acc, pick, index, array) => {
-            if (index % 2 === 0) {
-              const nextPick = array[index + 1];
-              acc.push(
-                <tr key={pick.week}>
-                  <td>{pick.week}</td>
-                  <td>
-                    {pick.abbreviation}{' '}
-                    {getStatus(pick.correct)}
-                  </td>
-                  <td>
-                    {nextPick && (
-                      <>
-                        {nextPick.abbreviation}{' '}
-                        {getStatus(nextPick.correct)}
-                      </>
-                    )}
-                  </td>
-                </tr>
-              );
-            }
-            return acc;
-          }, [])}
+          {Array.from({ length: 16 }, (_, week) => {
+            const pick1 = picks.find(pick => pick.week === week + 1 && pick.pick_number === 1);
+            const pick2 = picks.find(pick => pick.week === week + 1 && pick.pick_number === 2);
+
+            return (
+              <tr key={week + 1}>
+                <td>{week + 1}</td>
+                <td>
+                  {pick1 ? (
+                    <>
+                      {pick1.abbreviation} {pick1.correct !== null && getStatus(pick1.correct)}
+                    </>
+                  ) : ''}
+                </td>
+                <td>
+                  {pick2 ? (
+                    <>
+                      {pick2.abbreviation} {pick2.correct !== null && getStatus(pick2.correct)}
+                    </>
+                  ) : ''}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

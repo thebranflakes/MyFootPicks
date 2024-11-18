@@ -24,9 +24,9 @@ nav {
     text-decoration: underline;
   }
   
-  /* Ensure the content is not overlapped by navbar */
+
   .content {
-    margin-top: 3rem; /* Adjust this value based on your nav height */
+    margin-top: 3rem; 
     padding: 1rem;
   }
   
